@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="src/css/style.css" />
+  <title>Naufragé</title>
+</head>
+
+<body>
+  <div class="header">
+    <div class="resources">
+      <div class="resource" title="nourriture">
+        <img src="./src/images/resources/nourriture.png" alt="nourriture">
+        <span id="food"></span>
+      </div>
+      <div class="resource" title="eau">
+        <img src="./src/images/resources/eau.png" alt="eau">
+        <span id="water"></span>
+      </div>
+      <div class="resource" title="bois">
+        <img src="./src/images/resources/bois.png" alt="bois">
+        <span id="wood"></span>
+      </div>
+      <div class="resource" title="outil">
+        <img src="./src/images/resources/outil.png" alt="outil">
+        <span id="tools"></span>
+      </div>
+      <div class="resource" title="materiau spécial">
+        <img src="./src/images/resources/materiau spécial.png" alt="materiau spécial">
+        <span id="material"></span>
+      </div>
+      <div class="resource" title="moral">
+        <img src="./src/images/resources/moral.png" alt="moral">
+        <span id="mood"></span>
+      </div>
+      <div class="resource">
+        <br>
+      </div>
+      <div class="resource">
+        Actions restantes : <span id="nbActions"></span>
+      </div>
+    </div>
+    <h1 class="day">Jour <span id="day"></span></h1>
+  </div>
+  <div> Bâtiments possédés : <span id="buildings"></span>
+  </div>
+  </div>
+  <hr>
+  <div class="buttons">
+    <div id="action-choices"></div>
+    <button class="day-button" id="dayButton"></button>
+  </div>
+  <div id="log"></div>
+  <!-- <div>La journée touche à sa fin. Vous devez manger.</div> -->
+  <div id="consumption-text"></div>
+  </div>
+  <script src="src/js/script.js"></script>
+</body>
+
+</html>

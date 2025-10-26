@@ -1,0 +1,85 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+}
+
+.resources {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.resource {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.buttons {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.day-button {
+  margin: 10px;
+  padding: 10px;
+  font-size: medium;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.resmsg {
+  margin-left: 30px;
+}
+
+.resource img {
+  width: 32px;
+  height: 32px;
+}
+
+.day {
+  font-weight: bold;
+}
+
+button {
+  margin: 10px;
+}
+
+.none {
+  display: none;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+.building-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.selected {
+  background-color: green;
+  color: white;
+}
+
+.building-list button {
+  text-align: left;
+  padding: 8px;
+}
+
+#validate-actions {
+  text-align: center;
+  background-color: blue;
+  color: white;
+}
+
+#validate-actions:disabled {
+  text-align: center;
+  background-color: lightblue;
+  color: white;
+}
