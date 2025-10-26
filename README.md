@@ -9,7 +9,6 @@ Naufragé est un jeu de survie développé en Javascript.
 - [Installation](#installation)
 - [Usage](#usage)
 - [Contribuer](#contribuer)
-- [Licence](#licence)
 
 ---
 
@@ -44,6 +43,3 @@ Dans Naufragé, vous incarnez un survivant échoué sur une île. Chaque jour un
 - Proposer des améliorations ou corriger des bugs via une Pull Request.
 
 ---
-
-## Licence
-Ce projet est sous licence MIT.  
