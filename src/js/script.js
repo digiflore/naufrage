@@ -87,7 +87,7 @@ function initGame() {
       material: 0,
       mood: 3
     },
-    buildings: ["Epave", "Atelier"],
+    buildings: ["Epave"],
   };
   refreshResources();
   refreshBuildings();
