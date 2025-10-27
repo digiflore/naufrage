@@ -13,21 +13,11 @@ const nbActionsElement = document.getElementById("nbActions");
 const dayElement = document.getElementById("day");
 const dayButtonElement = document.getElementById("dayButton");
 
-const eventContainer = document.getElementById("event-container");
-const eventText = document.getElementById("event-text");
-const eventChoices = document.getElementById("event-choices");
-const eventChoiceText = document.getElementById("event-choice-text");
-const actionContainer = document.getElementById("action-container");
-const actionLib = document.getElementById("action-lib");
 const actionChoices = document.getElementById("action-choices");
-const actionValidate = document.getElementById("validate-actions");
-const actionSummary = document.getElementById("action-summary");
-const consumptionContainer = document.getElementById("consumption-container");
-const consumptionText = document.getElementById("consumption-text");
 const logDiv = document.getElementById("log");
 
 let maxActions = 3;
-let maxMood = 10;
+let maxMood = 5;
 let selectedActions = [];
 let nbBuildingsAvailable = 0;
 
@@ -42,16 +32,21 @@ let dayEvents = [
   { text: "Un bande de rats mange tes provisions.", changes: { food: -1 }, condition: () => true },
   { text: "Tu t'écorche le pied en marchant sur une pierre.", changes: { mood: -1 }, condition: () => true },
   { text: "La solitude te pèse.", changes: { mood: -1 }, condition: () => true },
-  { text: "La chaleur est harassante, tu bois beaucoup d'eau.", changes: { water: -2 }, condition: () => true },
+  { text: "La chaleur est harassante, tu as besoin de boire.", changes: { water: -2 }, condition: () => true },
 ]
 
 let actions = [
   { text: "Fouiller l'épave du bâteau", condition: () => game.buildings.indexOf("Epave") > -1, action: () => searchShipwreck() },
   { text: "Explorer", condition: () => true, action: () => explore() },
-  { text: "Manger", condition: () => game.resources.food >= 1, action: () => eat() },
+  { text: "Manger", condition: () => game.resources.food >= 1, action: (index) => eat(index), changes: { food: -1, mood: +1 } },
   { text: "Construire", condition: () => getAvailableBuildings(), action: () => false },
-  { text: "Fabriquer des outils", condition: () => game.buildings.indexOf("Atelier") > -1 && game.resources.wood > 0, action: () => makeTools() },
-  { text: "Forger un matériau spécial", condition: () => game.buildings.indexOf("Atelier") > -1 && game.resources.wood >= 5 && game.resources.tools >= 1, action: () => forgeSpecial() },
+  { text: "Fabriquer des outils", condition: () => game.buildings.indexOf("Atelier") > -1 && game.resources.wood > 0, action: (index) => makeTools(index), changes: { tools: 1, wood: -1 } },
+  {
+    text: "Forger un matériau spécial",
+    condition: () => game.buildings.indexOf("Atelier") > -1 && game.resources.wood >= 5 && game.resources.tools >= 1,
+    action: (index) => forgeSpecial(index),
+    changes: { material: 1, wood: -5, tools: - 1 }
+  },
   { text: "Se reposer", condition: () => game.buildings.indexOf("Abri") > -1, action: () => rest() },
 ]
 
@@ -68,12 +63,12 @@ let exploreEvents = [
 ]
 
 let buildings = [
-  { name: "Abri", desc: "Coût : 3 bois", cost: { wood: 3 } },
-  { name: "Atelier", desc: "Coût : 5 bois", cost: { wood: 5 } },
-  { name: "Jardin", desc: "Coût : 5 bois", cost: { wood: 5 } },
-  { name: "Puits", desc: "Coût : 3 bois, 1 materiau spécial", cost: { wood: 3, material: 1 } },
-  { name: "Palissade", desc: "Coût : 4 bois", cost: { wood: 4 } },
-  { name: "Phare", desc: "Coût : 5 bois, 3 materiaux spéciaux, 2 outils", cost: { wood: 5, material: 3, tools: 2 } },
+  { name: "Abri", desc: "Coût : 3 bois", cost: { wood: -3 } },
+  { name: "Atelier", desc: "Coût : 5 bois", cost: { wood: -5 } },
+  { name: "Jardin", desc: "Coût : 5 bois", cost: { wood: -5 } },
+  { name: "Puits", desc: "Coût : 3 bois, 1 materiau spécial", cost: { wood: -3, material: -1 } },
+  { name: "Palissade", desc: "Coût : 4 bois", cost: { wood: -4 } },
+  { name: "Phare", desc: "Coût : 5 bois, 3 materiaux spéciaux, 2 outils", cost: { wood: -5, material: -3, tools: -2 } },
 ]
 
 window.onload = initGame();
@@ -83,15 +78,16 @@ function initGame() {
   game = {
     day: 0,
     actionsRemaining: 3,
+    status: "pause",
     resources: {
       food: 0,
       water: 0,
       wood: 0,
       tools: 0,
       material: 0,
-      mood: 5
+      mood: 3
     },
-    buildings: ["Epave"],
+    buildings: ["Epave", "Atelier"],
   };
   refreshResources();
   refreshBuildings();
@@ -100,8 +96,12 @@ function initGame() {
   logEvents("Tu te retrouve sur une île deserte. Arriveras-tu à survivre ?")
   dayButtonElement.textContent = "🏝️ Démarrer l'aventure";
   dayElement.textContent = 0;
+  actionChoices.innerHTML = "";
   nbActionsElement.textContent = 0;
-  dayButtonElement.onclick = () => { newDay() };
+  dayButtonElement.onclick = () => {
+    game.status = "playing";
+    newDay();
+  };
 }
 
 function newDay() {
@@ -123,18 +123,29 @@ function newDay() {
   launchActions();
 }
 
-function checkGameState() {
+function checkGameStatus() {
   let isEndGame = false;
   if (game.resources.mood <= 0) {
+    game.status = "lost";
     isEndGame = true;
   }
 
   if (isEndGame) {
+    if (game.status === "lost") {
+      logEvents("Tu as perdu !");
+    }
+
+    actionChoices.innerHTML = "";
+    game.actionsRemaining = 0;
+    nbActionsElement.textContent = game.actionsRemaining;
     dayButtonElement.textContent = "▶️ Nouvelle partie";
     dayButtonElement.onclick = () => { initGame() };
-    logEvents("Tu as perdu !");
-    game.actionsRemaining = 0;
   }
+}
+
+// check si le max mood et atteint et retourne le mood manquant
+function checkMaxMood() {
+  return maxMood - game.resources.mood;
 }
 
 function updateRemainingActions(nb) {
@@ -150,19 +161,13 @@ function updateDayButton() {
 }
 
 function refreshResources() {
-  let resourcesText = [];
-
-  for (let [key, value] of Object.entries(game.resources)) {
-    resourcesText.push(key + " " + value);
-  }
-  // console.log("resources : " + resourcesText);
   foodElement.textContent = game.resources.food;
   waterElement.textContent = game.resources.water;
   woodElement.textContent = game.resources.wood;
   toolsElement.textContent = game.resources.tools;
   materialElement.textContent = game.resources.material;
   moodElement.textContent = game.resources.mood;
-  checkGameState();
+  checkGameStatus();
 }
 
 function refreshBuildings() {
@@ -184,27 +189,106 @@ function getAvailableEvents() {
 function launchEvent() {
   let availableEvents = getAvailableEvents();
   let randEvent = launchDice(availableEvents.length);
+  //let randEvent = 9;
   let event = availableEvents[randEvent];
   logEvents(event.text);
-  applyResourceChanges(event.changes);
+  applyChanges(event.changes);
 }
 
-function applyResourceChanges(changes) {
-  let msgParts = [];
-  let amount = 0;
-  if (changes) {
-    for (let [key, value] of Object.entries(changes)) {
-      //amount = Math.floor(Math.random() * value) + 1;
-      amount = value;
-      game.resources[key] += amount;
-      if (amount > 0)
-        msgParts.push("+" + amount + getIcon(key));
-      else if (amount < 0)
-        msgParts.push(amount + getIcon(key));
+function launchActions() {
+  selectedActions = [];
+  actionChoices.innerHTML = "";
+  actions.forEach((a, index) => {
+    if (a.condition()) {
+      const btn = document.createElement("button");
+      if (a.text === "Construire") {
+        showBuildingDropdown();
+      }
+      else {
+        btn.textContent = a.text;
+        btn.onclick = () => {
+          if (game.actionsRemaining > 0) {
+            a.action(index);
+            updateRemainingActions(game.actionsRemaining - 1);
+            btn.disabled = true;
+          }
+        }
+        actionChoices.appendChild(btn);
+      }
     }
-    refreshResources();
-    let resources = msgParts.join(", ");
-    logEvents(resources, true);
+  });
+}
+
+function applyChanges(changes) {
+  if (changes) {
+    for (let key in changes) {
+      let value = changes[key];
+      let current = game.resources[key];
+      console.log(key);
+      console.log("current :" + current);
+      console.log("value :" + value);
+      // si c'est un gain
+      if (value > 0) {
+        // si c'est le mood, il ne faut pas dépasser le max
+        if (key === "mood") {
+          // si le mood ne dépasse pas le max alors on ajoute
+          if (current + value <= maxMood) {
+            game.resources[key] += value;
+          }
+          // si le mood dépasse le max alors on regarde ce que l'on peut rajouter
+          else {
+            let moodMissing = checkMaxMood();
+            game.resources[key] += moodMissing;
+            changes[key] = moodMissing;
+          }
+        }
+        else {
+          game.resources[key] += value;
+        }
+      }
+      // si c'est une perte
+      else {
+        // si la ressource reste positive
+        if (current + value >= 0) {
+          game.resources[key] += value;
+        }
+        else {
+          // si la ressource devient négative
+          // on met la ressource à zéro
+          game.resources[key] = 0;
+          // combien faut-il pour que la ressource soit à 0 ? - la ressource actuelle
+          changes[key] = -current;
+          // on récupère le reste
+          let remain = Math.abs(value + current);
+          // on ne peut pas retirer toutes les ressources alors on donne une pénalité
+          if (remain > 0) {
+            game.resources["mood"] -= 1;
+            changes["mood"] = -1;
+            logEvents("Pas assez de" + getIcon(key) + " !");
+          }
+        }
+      }
+    }
+  }
+
+  displayChanges(changes);
+  refreshResources();
+}
+
+function displayChanges(changes) {
+  if (changes) {
+    let msgParts = [];
+    console.log("displayChanges ");
+    for (let key in changes) {
+      let value = changes[key];
+      console.log(key + ":" + value);
+      if (value !== 0) {
+        msgParts.push((value > 0 ? "+" : "") + value + " " + getIcon(key));
+      }
+    }
+    if (msgParts.length > 0) {
+      logEvents(msgParts.join(', '), true);
+    }
   }
 }
 
@@ -242,31 +326,6 @@ function logEvents(message, isResource = false) {
     logDiv.innerHTML += `<p>${message}</p>`;
   console.log(message);
   logDiv.scrollTop = logDiv.scrollHeight;
-}
-
-function launchActions() {
-  selectedActions = [];
-  actionChoices.innerHTML = "";
-  console.log("Possède Abri " + (game.buildings.indexOf("Abri") > -1));
-  actions.forEach(a => {
-    if (a.condition()) {
-      const btn = document.createElement("button");
-      if (a.text === "Construire") {
-        showBuildingDropdown();
-      }
-      else {
-        btn.textContent = a.text;
-        btn.onclick = () => {
-          if (game.actionsRemaining > 0) {
-            a.action();
-            updateRemainingActions(game.actionsRemaining - 1);
-            btn.disabled = true;
-          }
-        }
-        actionChoices.appendChild(btn);
-      }
-    }
-  });
 }
 
 function getAvailableBuildings() {
@@ -316,8 +375,8 @@ function showBuildingDropdown() {
 
 function searchShipwreck() {
   logEvents("Tu fouille l'épave.");
-  applyResourceChanges({ food: 1, wood: 1 });
-  // logEvents("1" + getIcon("food") + ", +1" + getIcon("wood"), true);
+  let changes = { food: 1, wood: 1 }; // TODO : pour le moment fixe, à voir pour rendre aléatoire
+  applyChanges(changes);
 }
 
 function explore() {
@@ -325,59 +384,45 @@ function explore() {
   let rand = launchDice(exploreEvents.length);
   let event = exploreEvents[rand];
   logEvents(event.text);
-  applyResourceChanges(event.changes);
+  applyChanges(event.changes);
 }
 
-function eat() {
-  game.resources.food -= 1;
-  game.resources.mood += 1;
-  refreshResources();
+function eat(index) {
   logEvents("Tu décide de manger.");
-  logEvents("-1" + getIcon("food") + ", +1" + getIcon("mood"), true);
+  applyChanges(actions[index].changes);
 }
 
 function construct(idBuilding) {
-  let msgParts = [];
-
   const building = buildings[idBuilding];
 
-  for (let [key, value] of Object.entries(building.cost)) {
-    game.resources[key] -= value;
-    msgParts.push("-" + value + " " + getIcon(key));
-  }
-  refreshResources();
   logEvents("Tu as construit : " + building.name)
-  logEvents(msgParts.join(', '), true);
+  applyChanges(building.cost);
 
-  game.buildings.push(building.name);
+  game.buildings.push(building.name); // TODO : peut-être faire un tableau avec tous les batiments et true/false si construit ou non
   refreshBuildings();
 }
 
-function makeTools() {
-  game.resources.tools += 1;
-  game.resources.wood += 1;
-  refreshResources();
+function makeTools(index) {
+  let changes = actions[index].changes;
   logEvents("Tu fabrique un outil.");
-  logEvents("+1" + getIcon("tools") + ", -1" + getIcon("wood"), true);
+  applyChanges(changes);
 }
 
-function forgeSpecial() {
-  game.resources.material += 1;
-  game.resources.wood -= 5;
-  game.resources.tools -= 1;
-  refreshResources();
+function forgeSpecial(index) {
+  let changes = actions[index].changes;
   logEvents("Tu fabrique un materiau spécial.");
-  logEvents("+1" + getIcon("material") + ", -5" + getIcon("wood") + ", -1" + getIcon("tools"), true);
+  applyChanges(changes);
 }
 
 function rest() {
+  let changes = [];
   logEvents("Tu décide de te reposer.");
-  if (game.resources.mood < 5) {
-    logEvents("+1 " + getIcon("mood"), true);
-    game.resources.mood += 1;
-    refreshResources();
+  let remainMood = checkMaxMood();
+  if (remainMood > 0) {
+    changes = { mood: 1 };
+    applyChanges(changes);
   }
-  else if (game.resources.mood == 5) {
+  else {
     logEvents("Max de moral atteint", true);
   }
 }

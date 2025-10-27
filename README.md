@@ -22,7 +22,7 @@ Dans Naufragé, vous incarnez un survivant échoué sur une île. Chaque jour un
 - Collecte de ressources et fabrication d’objets
 - Gestion de la faim
 - Actions limités par jour
-- Graphismes simples conçus par moi-même en pixel
+- Graphismes simples conçus par moi-même en pixel art
 
 ---
 
