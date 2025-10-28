@@ -169,9 +169,18 @@ function checkGameStatus() {
     isEndGame = true;
   }
 
+  if (game.buildings.indexOf("Phare") > -1) {
+    game.status = "won";
+    isEndGame = true;
+  }
+
   if (isEndGame) {
+    if (game.status === "won") {
+      logEvents("🏆 Félicitation, tu as gagné !");
+    }
+
     if (game.status === "lost") {
-      logEvents("Tu as perdu !");
+      logEvents("😔 Dommage, tu as perdu !");
     }
 
     actionChoices.innerHTML = "";
